@@ -20,14 +20,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     private static final int REQUEST_CODE_TAKEN_PHOTO_GALLERY = 0x02;
 
-    LinearLayout imageLayout;
+    DraggableImageLayout imageLayout;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         findViewById(R.id.add_picture).setOnClickListener(this);
-        imageLayout = (LinearLayout) findViewById(R.id.image_layout);
+        imageLayout = (DraggableImageLayout) findViewById(R.id.image_layout);
+        imageLayout.setHoverView((ImageView) findViewById(R.id.hover_view));
     }
 
 
@@ -85,10 +87,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         }
         DisplayMetrics dm = getResources().getDisplayMetrics();
 
-        ImageView imageView = new ImageView(this);
-        imageView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, pBitmap.getHeight() * dm.widthPixels / pBitmap.getWidth()));
-        imageView.setImageBitmap(pBitmap);
-        imageLayout.addView(imageView);
+        int width = dm.widthPixels;
+        int height = pBitmap.getHeight() * dm.widthPixels / pBitmap.getWidth();
 
+        ImageView imageView = new ImageView(this);
+        imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        imageView.setLayoutParams(new LinearLayout.LayoutParams(width, height));
+        imageView.setImageBitmap(BitmapUtils.resizeBitmap(pBitmap, width, height));
+
+        imageLayout.addView(imageView);
     }
+
+
 }

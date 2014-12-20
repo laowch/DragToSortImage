@@ -18,11 +18,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <LinearLayout
-            android:id="@+id/image_layout"
-            android:orientation="vertical"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <com.laowch.dragtosort.DraggableImageLayout
+                android:id="@+id/image_layout"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <ImageView
+                android:id="@+id/hover_view"
+                android:layout_width="0dp"
+                android:layout_height="0dp" />
+        </FrameLayout>
     </LinearLayout>
 
 </ScrollView>
