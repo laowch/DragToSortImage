@@ -69,6 +69,16 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
     @Override
     public boolean onLongClick(View v) {
 
+        float height = getResources().getDisplayMetrics().heightPixels - getResources().getDimensionPixelSize(R.dimen.draggable_image_vertical_padding) * 2;
+        final float ratio;
+        if (height / this.getHeight() > 1) {
+            ratio = 1;
+        } else if (height / this.getHeight() < 0.5f) {
+            ratio = 0.5f;
+        } else {
+            ratio = height / this.getHeight();
+        }
+
         ArrayList<Animator> animations = new ArrayList<Animator>();
 
         int totalY = 0;
@@ -80,20 +90,19 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
                 mMobilePosition = i;
             }
 
-            ObjectAnimator scaleX = ObjectAnimator.ofFloat(child, View.SCALE_X, 1f, 0.5f);
+            ObjectAnimator scaleX = ObjectAnimator.ofFloat(child, View.SCALE_X, 1f, ratio);
             animations.add(scaleX);
 
-            ObjectAnimator scaleY = ObjectAnimator.ofFloat(child, View.SCALE_Y, 1f, 0.5f);
+            ObjectAnimator scaleY = ObjectAnimator.ofFloat(child, View.SCALE_Y, 1f, ratio);
             animations.add(scaleY);
 
-            ObjectAnimator transY = ObjectAnimator.ofFloat(child, View.TRANSLATION_Y, 0, -totalY / 2 + child.getHeight() / 4);
+            ObjectAnimator transY = ObjectAnimator.ofFloat(child, View.TRANSLATION_Y, 0, -totalY * (1 - ratio) + (child.getHeight() * (1 - ratio)) / 2);
             animations.add(transY);
-
 
         }
 
         View selectedView = getChildAt(mMobilePosition);
-        initHoverCell((ImageView) selectedView, animations);
+        initHoverCell((ImageView) selectedView, animations, ratio);
 
 
         selectedView.setAlpha(0.5f);
@@ -113,8 +122,8 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
                     child.setScaleY(1);
                     child.setTranslationY(0);
 
-                    child.getLayoutParams().width = child.getLayoutParams().width / 2;
-                    child.getLayoutParams().height = child.getLayoutParams().height / 2;
+                    child.getLayoutParams().width = (int) (child.getLayoutParams().width * ratio);
+                    child.getLayoutParams().height = (int) (child.getLayoutParams().height * ratio);
                     requestLayout();
                     invalidate();
                 }
@@ -211,7 +220,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
      * size. The hover cell's BitmapDrawable is drawn on top of the bitmap every
      * single time an invalidate call is made.
      */
-    private void initHoverCell(ImageView imageView, ArrayList<Animator> animations) {
+    private void initHoverCell(ImageView imageView, ArrayList<Animator> animations, float ratio) {
 
 
         int w = imageView.getWidth();
@@ -236,10 +245,10 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
         // animation
 
-        ObjectAnimator scaleX = ObjectAnimator.ofFloat(mHoverCell, View.SCALE_X, 1f, 0.5f);
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(mHoverCell, View.SCALE_X, 1f, ratio);
         animations.add(scaleX);
 
-        ObjectAnimator scaleY = ObjectAnimator.ofFloat(mHoverCell, View.SCALE_Y, 1f, 0.5f);
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(mHoverCell, View.SCALE_Y, 1f, ratio);
         animations.add(scaleY);
 
         int deltaY = mDownY - (top + h / 2);
