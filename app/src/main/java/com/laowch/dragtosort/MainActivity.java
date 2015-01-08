@@ -10,6 +10,7 @@ import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.Toast;
 
 
@@ -30,6 +31,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         findViewById(R.id.add_picture).setOnClickListener(this);
         imageLayout = (DraggableImageLayout) findViewById(R.id.image_layout);
         imageLayout.setHoverView((ImageView) findViewById(R.id.hover_view));
+        imageLayout.setScrollView((ScrollView) findViewById(R.id.scroll_view));
+        imageLayout.setAddPictureView(findViewById(R.id.add_picture));
     }
 
 
