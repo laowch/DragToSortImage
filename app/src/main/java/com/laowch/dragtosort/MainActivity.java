@@ -1,13 +1,13 @@
 package com.laowch.dragtosort;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.DisplayMetrics;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -47,6 +47,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         startActivityForResult(intent, REQUEST_CODE_TAKEN_PHOTO_GALLERY);
     }
 
@@ -66,12 +67,26 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 }
                 case REQUEST_CODE_TAKEN_PHOTO_GALLERY: {
                     if (data != null) {
-                        new GetBitmapFromUriTask(this, data.getData(), new GetBitmapFromUriTask.IOnImageTakenListener() {
-                            @Override
-                            public void onImageTaken(final Bitmap pBitmap) {
-                                MainActivity.this.onImageTaken(pBitmap);
+                        if (data.getData() == null) {
+                            ClipData clipData = data.getClipData();
+                            for (int i = 0; i < clipData.getItemCount(); i++) {
+                                ClipData.Item item = clipData.getItemAt(i);
+                                new GetBitmapFromUriTask(this, item.getUri(), new GetBitmapFromUriTask.IOnImageTakenListener() {
+                                    @Override
+                                    public void onImageTaken(final Bitmap pBitmap) {
+                                        MainActivity.this.onImageTaken(pBitmap);
+                                    }
+                                }).execute();
                             }
-                        }).execute();
+                        } else {
+                            new GetBitmapFromUriTask(this, data.getData(), new GetBitmapFromUriTask.IOnImageTakenListener() {
+                                @Override
+                                public void onImageTaken(final Bitmap pBitmap) {
+                                    MainActivity.this.onImageTaken(pBitmap);
+                                }
+                            }).execute();
+                        }
+
                         break;
                     }
                 }
