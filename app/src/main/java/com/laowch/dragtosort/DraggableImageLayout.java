@@ -28,8 +28,9 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
     private View mAddPictureView;
 
-    private int mDownY = -1;
+
     private int mDownX = -1;
+    private int mDownY = -1;
 
     private int mOffsetX = 0;
     private int mOffsetY = 0;
@@ -82,7 +83,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
         requestDisallowInterceptTouchEvent(true);
 
         // calculate scale ratio
-        float viewPortHeight = getResources().getDisplayMetrics().heightPixels - getResources().getDimensionPixelSize(R.dimen.draggable_image_vertical_padding) * 2;
+        float viewPortHeight = DisplayUtils.getScreenHeight(getContext()) - getResources().getDimensionPixelSize(R.dimen.draggable_image_vertical_padding) * 2;
         final float ratio;
         if (viewPortHeight / this.getHeight() > 1) {
             ratio = 1;
@@ -96,7 +97,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
         int totalY = 0;
 
-        int scrollY = mScrollView.getScrollY();
+        final int scrollY = mScrollView.getScrollY();
 
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
@@ -111,10 +112,13 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
             childBounds.put(i, startRect);
         }
 
-        View selectedView = getChildAt(mMobilePosition);
+        final View selectedView = getChildAt(mMobilePosition);
         selectedView.setAlpha(0.5f);
 
-        // set ratio
+        // change layout
+
+        mAddPictureView.setVisibility(View.GONE);
+        this.setPadding(0, 0, 0, 0);
 
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
@@ -127,13 +131,15 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
         // anim
         final ArrayList<Animator> animations = new ArrayList<Animator>();
-        initHoverCell((ImageView) selectedView, animations, ratio);
+
 
         final ViewTreeObserver observer = getViewTreeObserver();
         observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
                 observer.removeOnPreDrawListener(this);
+
+                initHoverCell((ImageView) selectedView, animations, ratio, scrollY);
 
                 int scrollY = mScrollView.getScrollY();
 
@@ -258,7 +264,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
         mCellIsMobile = false;
         mMobilePosition = INVALID_POSITION;
 
-        final float ratio = getResources().getDisplayMetrics().widthPixels / (float) getChildAt(0).getWidth();
+        final float ratio = DisplayUtils.getScreenWidth(getContext()) / (float) getChildAt(0).getWidth();
 
         // record startBounds
 
@@ -282,6 +288,10 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
             child.getLayoutParams().height = (int) (child.getLayoutParams().height * ratio);
         }
 
+        mAddPictureView.setVisibility(View.VISIBLE);
+        this.setPadding(0, DisplayUtils.dpToPixel(getContext(), 90), 0, 0);
+
+
         requestLayout();
         invalidate();
 
@@ -293,10 +303,10 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
         observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
-                View view = getChildAt(lastMobilePosition);
-                mScrollView.setScrollY(view.getTop() + mAddPictureView.getHeight());
-
                 observer.removeOnPreDrawListener(this);
+
+                View view = getChildAt(lastMobilePosition);
+                mScrollView.setScrollY(view.getTop());
 
                 int scrollY = mScrollView.getScrollY();
 
@@ -348,7 +358,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
      * size. The hover cell's BitmapDrawable is drawn on top of the bitmap every
      * single time an invalidate call is made.
      */
-    private void initHoverCell(ImageView imageView, ArrayList<Animator> animations, float ratio) {
+    private void initHoverCell(ImageView imageView, ArrayList<Animator> animations, float ratio, int scrollY) {
         int w = imageView.getWidth();
         int h = imageView.getHeight();
         int top = imageView.getTop();
@@ -357,8 +367,8 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
         mHoverCell.setVisibility(View.VISIBLE);
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(w, h);
         mHoverCell.setLayoutParams(layoutParams);
-        mHoverCell.setTop(top);
-        mHoverCell.setLeft(left);
+        mHoverCell.setTranslationX(left);
+        mHoverCell.setTranslationY(top);
         mHoverCell.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 
 
@@ -372,20 +382,21 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
         // animation
 
-        ObjectAnimator scaleX = ObjectAnimator.ofFloat(mHoverCell, View.SCALE_X, 1f, ratio);
-        animations.add(scaleX);
+        ObjectAnimator transX = ObjectAnimator.ofFloat(mHoverCell, View.TRANSLATION_X, left, mDownX - w / 2);
+        animations.add(transX);
 
-        ObjectAnimator scaleY = ObjectAnimator.ofFloat(mHoverCell, View.SCALE_Y, 1f, ratio);
-        animations.add(scaleY);
 
-        int deltaY = mDownY - (top + h / 2);
-
-        ObjectAnimator transY = ObjectAnimator.ofFloat(mHoverCell, View.TRANSLATION_Y, 0, deltaY);
+        int rawY = mDownY - scrollY;
+        ObjectAnimator transY = ObjectAnimator.ofFloat(mHoverCell, View.TRANSLATION_Y, top, rawY - h / 2);
         animations.add(transY);
 
-        int deltaX = mDownX - (left + w / 2);
-        ObjectAnimator transX = ObjectAnimator.ofFloat(mHoverCell, View.TRANSLATION_X, 0, deltaX);
-        animations.add(transX);
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(mHoverCell, View.SCALE_X, 1 / ratio, 1);
+        animations.add(scaleX);
+
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(mHoverCell, View.SCALE_Y, 1 / ratio, 1);
+        animations.add(scaleY);
+
+
     }
 
 
@@ -395,8 +406,8 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
         int top = mHoverCell.getTop();
         int left = mHoverCell.getLeft();
 
-        mHoverCell.setTranslationX(x - (left + w / 2));
-        mHoverCell.setTranslationY(y - (top + h / 2));
+        mHoverCell.setTranslationX(x - (w / 2));
+        mHoverCell.setTranslationY(y - (h / 2));
     }
 
     private void releaseHoverCell() {
