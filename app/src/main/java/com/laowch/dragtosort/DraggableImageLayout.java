@@ -257,100 +257,9 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
             return;
         }
 
-        final int lastMobilePosition = mMobilePosition;
 
-        requestDisallowInterceptTouchEvent(false);
         final View selectedView = getChildAt(mMobilePosition);
-        selectedView.setAlpha(1);
-        mCellIsMobile = false;
-        mMobilePosition = INVALID_POSITION;
-
-        final float ratio = DisplayUtils.getScreenWidth(getContext()) / (float) getChildAt(0).getWidth();
-
-        // record startBounds
-
-
-        final int scrollY = mScrollView.getScrollY();
-
-        for (int i = 0; i < getChildCount(); i++) {
-            View child = getChildAt(i);
-
-            Rect startRect = new Rect(child.getLeft(), child.getTop() - scrollY, child.getRight(),
-                    child.getBottom() - scrollY);
-            childBounds.put(i, startRect);
-        }
-
-
-        // set ratio
-
-        for (int i = 0; i < getChildCount(); i++) {
-            View child = getChildAt(i);
-            child.getLayoutParams().width = (int) (child.getLayoutParams().width * ratio);
-            child.getLayoutParams().height = (int) (child.getLayoutParams().height * ratio);
-        }
-
-        mAddPictureView.setVisibility(View.VISIBLE);
-        this.setPadding(0, DisplayUtils.dpToPixel(getContext(), 90), 0, 0);
-
-
-        requestLayout();
-        invalidate();
-
-        //anim
-
-        final ArrayList<Animator> animations = new ArrayList<Animator>();
-
-        final ViewTreeObserver observer = getViewTreeObserver();
-        observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-            @Override
-            public boolean onPreDraw() {
-                observer.removeOnPreDrawListener(this);
-
-
-                View view = getChildAt(lastMobilePosition);
-                mScrollView.setScrollY(view.getTop());
-
-
-                int scrollY = mScrollView.getScrollY();
-
-                for (int i = 0; i < getChildCount(); i++) {
-                    View child = getChildAt(i);
-                    Rect startRect = childBounds.get(i);
-                    int startTop = startRect.top;
-
-
-                    int delta = (int) (startTop - child.getTop() + child.getHeight() * (1 / ratio - 1) / 2) + scrollY;
-
-                    if (child == view) {
-                        releaseHoverCell((ImageView) view, animations, ratio, delta);
-                        continue;
-                    }
-
-                    if (delta != 0) {
-                        ObjectAnimator yTransAnim = ObjectAnimator.ofFloat(child, View.TRANSLATION_Y, delta, 0);
-                        ObjectAnimator xScaleAnim = ObjectAnimator.ofFloat(child, View.SCALE_X, 1 / ratio, 1);
-                        ObjectAnimator yScaleAnim = ObjectAnimator.ofFloat(child, View.SCALE_Y, 1 / ratio, 1);
-                        animations.add(yTransAnim);
-                        animations.add(xScaleAnim);
-                        animations.add(yScaleAnim);
-                    }
-                }
-
-                AnimatorSet set = new AnimatorSet();
-
-                set.setDuration(300);
-                set.playTogether(animations);
-                set.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        childBounds.clear();
-                    }
-                });
-                set.start();
-
-                return true;
-            }
-        });
+        releaseHoverCell(selectedView);
 
 
     }
@@ -409,28 +318,112 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
     }
 
 
-    private void releaseHoverCell(ImageView imageView, ArrayList<Animator> animations, float ratio, int delta) {
-        mHoverCell.setVisibility(View.GONE);
+    private void releaseHoverCell(final View selectedView) {
 
-        int w = imageView.getWidth();
-        int h = imageView.getHeight();
-        int top = imageView.getTop();
-        int left = imageView.getLeft();
+        mHoverCell.animate().translationX(selectedView.getLeft()).translationY(selectedView.getTop()).setDuration(300).setListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                mHoverCell.setVisibility(GONE);
+                selectedView.setAlpha(1);
+                expandImages();
+            }
+        }).start();
 
-        ObjectAnimator transX = ObjectAnimator.ofFloat(imageView, View.TRANSLATION_X, mHoverCell.getTranslationX() - (w - w / ratio) / 2, 0);
-        animations.add(transX);
+    }
 
-        ObjectAnimator transY = ObjectAnimator.ofFloat(imageView, View.TRANSLATION_Y, mHoverCell.getTranslationY() + delta, 0);
-        animations.add(transY);
-
-
-        ObjectAnimator scaleX = ObjectAnimator.ofFloat(imageView, View.SCALE_X, 1 / ratio, 1);
-        animations.add(scaleX);
-
-        ObjectAnimator scaleY = ObjectAnimator.ofFloat(imageView, View.SCALE_Y, 1 / ratio, 1);
-        animations.add(scaleY);
+    private void expandImages() {
 
 
+        requestDisallowInterceptTouchEvent(false);
+
+        final int lastMobilePosition = mMobilePosition;
+
+
+        mCellIsMobile = false;
+        mMobilePosition = INVALID_POSITION;
+
+        final float ratio = DisplayUtils.getScreenWidth(getContext()) / (float) getChildAt(0).getWidth();
+
+        // record startBounds
+
+
+        final int scrollY = mScrollView.getScrollY();
+
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+
+            Rect startRect = new Rect(child.getLeft(), child.getTop() - scrollY, child.getRight(),
+                    child.getBottom() - scrollY);
+            childBounds.put(i, startRect);
+        }
+
+
+        // set ratio
+
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+            child.getLayoutParams().width = (int) (child.getLayoutParams().width * ratio);
+            child.getLayoutParams().height = (int) (child.getLayoutParams().height * ratio);
+        }
+
+        mAddPictureView.setVisibility(View.VISIBLE);
+        this.setPadding(0, DisplayUtils.dpToPixel(getContext(), 90), 0, 0);
+
+
+        requestLayout();
+        invalidate();
+
+        //anim
+
+        final ArrayList<Animator> animations = new ArrayList<Animator>();
+
+        final ViewTreeObserver observer = getViewTreeObserver();
+        observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                observer.removeOnPreDrawListener(this);
+
+
+                View view = getChildAt(lastMobilePosition);
+                mScrollView.setScrollY(view.getTop());
+
+
+                int scrollY = mScrollView.getScrollY();
+
+
+                for (int i = 0; i < getChildCount(); i++) {
+                    View child = getChildAt(i);
+                    Rect startRect = childBounds.get(i);
+                    int startTop = startRect.top;
+
+
+                    int delta = (int) (startTop - child.getTop() + child.getHeight() * (1 / ratio - 1) / 2) + scrollY;
+
+                    if (delta != 0) {
+                        ObjectAnimator yTransAnim = ObjectAnimator.ofFloat(child, View.TRANSLATION_Y, delta, 0);
+                        ObjectAnimator xScaleAnim = ObjectAnimator.ofFloat(child, View.SCALE_X, 1 / ratio, 1);
+                        ObjectAnimator yScaleAnim = ObjectAnimator.ofFloat(child, View.SCALE_Y, 1 / ratio, 1);
+                        animations.add(yTransAnim);
+                        animations.add(xScaleAnim);
+                        animations.add(yScaleAnim);
+                    }
+                }
+
+                AnimatorSet set = new AnimatorSet();
+
+                set.setDuration(300);
+                set.playTogether(animations);
+                set.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        childBounds.clear();
+                    }
+                });
+                set.start();
+
+                return true;
+            }
+        });
     }
 
 
