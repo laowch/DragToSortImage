@@ -95,9 +95,10 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
         // calculate mMobilePosition and record startBounds
 
-        int totalY = 0;
+        int totalY = getPaddingTop();
 
         final int scrollY = mScrollView.getScrollY();
+
 
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
@@ -200,8 +201,8 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
                 int deltaY = mLastEventY - mDownY;
 
                 if (mCellIsMobile) {
-                    mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left,
-                            mHoverCellOriginalBounds.top + deltaY + mOffsetY);
+//                    mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left,
+//                            mHoverCellOriginalBounds.top + deltaY + mOffsetY);
 
                     moveHoverCell(event.getX(), event.getY());
                     invalidate();
@@ -259,7 +260,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
         final int lastMobilePosition = mMobilePosition;
 
         requestDisallowInterceptTouchEvent(false);
-        View selectedView = getChildAt(mMobilePosition);
+        final View selectedView = getChildAt(mMobilePosition);
         selectedView.setAlpha(1);
         mCellIsMobile = false;
         mMobilePosition = INVALID_POSITION;
@@ -269,7 +270,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
         // record startBounds
 
 
-        int scrollY = mScrollView.getScrollY();
+        final int scrollY = mScrollView.getScrollY();
 
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
@@ -305,8 +306,10 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
             public boolean onPreDraw() {
                 observer.removeOnPreDrawListener(this);
 
+
                 View view = getChildAt(lastMobilePosition);
                 mScrollView.setScrollY(view.getTop());
+
 
                 int scrollY = mScrollView.getScrollY();
 
@@ -317,6 +320,12 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
 
                     int delta = (int) (startTop - child.getTop() + child.getHeight() * (1 / ratio - 1) / 2) + scrollY;
+
+                    if (child == view) {
+                        releaseHoverCell((ImageView) view, animations, ratio, delta);
+                        continue;
+                    }
+
                     if (delta != 0) {
                         ObjectAnimator yTransAnim = ObjectAnimator.ofFloat(child, View.TRANSLATION_Y, delta, 0);
                         ObjectAnimator xScaleAnim = ObjectAnimator.ofFloat(child, View.SCALE_X, 1 / ratio, 1);
@@ -343,7 +352,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
             }
         });
 
-        releaseHoverCell();
+
     }
 
 
@@ -400,6 +409,31 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
     }
 
 
+    private void releaseHoverCell(ImageView imageView, ArrayList<Animator> animations, float ratio, int delta) {
+        mHoverCell.setVisibility(View.GONE);
+
+        int w = imageView.getWidth();
+        int h = imageView.getHeight();
+        int top = imageView.getTop();
+        int left = imageView.getLeft();
+
+        ObjectAnimator transX = ObjectAnimator.ofFloat(imageView, View.TRANSLATION_X, mHoverCell.getTranslationX() - (w - w / ratio) / 2, 0);
+        animations.add(transX);
+
+        ObjectAnimator transY = ObjectAnimator.ofFloat(imageView, View.TRANSLATION_Y, mHoverCell.getTranslationY() + delta, 0);
+        animations.add(transY);
+
+
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(imageView, View.SCALE_X, 1 / ratio, 1);
+        animations.add(scaleX);
+
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(imageView, View.SCALE_Y, 1 / ratio, 1);
+        animations.add(scaleY);
+
+
+    }
+
+
     private void moveHoverCell(float x, float y) {
         int w = mHoverCell.getWidth();
         int h = mHoverCell.getHeight();
@@ -410,9 +444,6 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
         mHoverCell.setTranslationY(y - (h / 2));
     }
 
-    private void releaseHoverCell() {
-        mHoverCell.setVisibility(View.GONE);
-    }
 
     public void setHoverView(ImageView hoverView) {
         this.mHoverCell = hoverView;
