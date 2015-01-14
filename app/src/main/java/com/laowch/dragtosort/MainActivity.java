@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.DisplayMetrics;
@@ -12,6 +13,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Toast;
+
+import java.util.List;
 
 
 public class MainActivity extends ActionBarActivity implements View.OnClickListener {
@@ -47,11 +50,22 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
 
     public void onTakenGalleryPhoto() {
-        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("image/*");
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        startActivityForResult(intent, REQUEST_CODE_TAKEN_PHOTO_GALLERY);
+        try {
+            // prior call com.laowch.imagepicker
+            final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setClassName("com.laowch.imagepicker", "com.laowch.imagepicker.ImagePickerActivity");
+            intent.setType("image/*");
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            startActivityForResult(intent, REQUEST_CODE_TAKEN_PHOTO_GALLERY);
+        } catch (Exception ex) {
+
+            final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("image/*");
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            startActivityForResult(intent, REQUEST_CODE_TAKEN_PHOTO_GALLERY);
+        }
     }
 
 
@@ -70,7 +84,18 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 }
                 case REQUEST_CODE_TAKEN_PHOTO_GALLERY: {
                     if (data != null) {
-                        if (data.getData() == null) {
+                        if (data.getParcelableArrayListExtra("uris") != null) {
+                            List<Uri> uriList = data.getParcelableArrayListExtra("uris");
+                            for (int i = 0; i < uriList.size(); i++) {
+
+                                new GetBitmapFromUriTask(this, uriList.get(i), new GetBitmapFromUriTask.IOnImageTakenListener() {
+                                    @Override
+                                    public void onImageTaken(final Bitmap pBitmap) {
+                                        MainActivity.this.onImageTaken(pBitmap);
+                                    }
+                                }).execute();
+                            }
+                        } else if (data.getData() == null) {
                             ClipData clipData = data.getClipData();
                             for (int i = 0; i < clipData.getItemCount(); i++) {
                                 ClipData.Item item = clipData.getItemAt(i);
