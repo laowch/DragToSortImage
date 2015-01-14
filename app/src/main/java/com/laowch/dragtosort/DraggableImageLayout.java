@@ -163,7 +163,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
                 AnimatorSet set = new AnimatorSet();
 
-                set.setDuration(300);
+                set.setDuration(100);
                 set.playTogether(animations);
                 set.addListener(new AnimatorListenerAdapter() {
                     @Override
@@ -198,11 +198,9 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
                 int pointerIndex = event.findPointerIndex(mActivePointerId);
 
                 mLastEventY = (int) event.getY(pointerIndex);
-                int deltaY = mLastEventY - mDownY;
+
 
                 if (mCellIsMobile) {
-//                    mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left,
-//                            mHoverCellOriginalBounds.top + deltaY + mOffsetY);
 
                     moveHoverCell(event.getX(), event.getY());
                     invalidate();
@@ -245,6 +243,56 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
     }
 
     private void handleCellSwitch() {
+
+
+        View belowView = mMobilePosition + 1 < getChildCount() ? getChildAt(mMobilePosition + 1) : null;
+        final View mobileView = getChildAt(mMobilePosition);
+        View aboveView = mMobilePosition - 1 < 0 ? null : getChildAt(mMobilePosition - 1);
+
+        final boolean isBelow = (belowView != null) && (mLastEventY > belowView.getTop());
+        boolean isAbove = (aboveView != null) && (mLastEventY < aboveView.getBottom());
+
+        if (isBelow || isAbove) {
+
+            final View switchView = isBelow ? belowView : aboveView;
+            removeView(mobileView);
+            addView(mobileView, mMobilePosition + (isBelow ? 1 : -1));
+
+            mMobilePosition = isBelow ? mMobilePosition + 1 : mMobilePosition - 1;
+
+            final ViewTreeObserver observer = getViewTreeObserver();
+            observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                public boolean onPreDraw() {
+                    observer.removeOnPreDrawListener(this);
+
+
+                    if (isBelow) {
+                        ObjectAnimator animator = ObjectAnimator.ofFloat(switchView,
+                                View.TRANSLATION_Y, mobileView.getHeight(), 0);
+                        animator.setDuration(300);
+                        animator.start();
+
+                        ObjectAnimator animator2 = ObjectAnimator.ofFloat(mobileView,
+                                View.TRANSLATION_Y, -switchView.getHeight(), 0);
+                        animator2.setDuration(300);
+                        animator2.start();
+                    } else {
+                        ObjectAnimator animator = ObjectAnimator.ofFloat(switchView,
+                                View.TRANSLATION_Y, -mobileView.getHeight(), 0);
+                        animator.setDuration(300);
+                        animator.start();
+
+                        ObjectAnimator animator2 = ObjectAnimator.ofFloat(mobileView,
+                                View.TRANSLATION_Y, switchView.getHeight(), 0);
+                        animator2.setDuration(300);
+                        animator2.start();
+                    }
+
+
+                    return true;
+                }
+            });
+        }
     }
 
     private void touchEventsCancelled() {
