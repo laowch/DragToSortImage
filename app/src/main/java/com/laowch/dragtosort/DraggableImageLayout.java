@@ -265,8 +265,8 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
         final View mobileView = getChildAt(mMobilePosition);
         View aboveView = mMobilePosition - 1 < 0 ? null : getChildAt(mMobilePosition - 1);
 
-        final boolean isBelow = (belowView != null) && (mLastEventY > belowView.getTop());
-        boolean isAbove = (aboveView != null) && (mLastEventY < aboveView.getBottom());
+        final boolean isBelow = (belowView != null) && (mLastEventY > belowView.getTop() + belowView.getHeight() / 2);
+        boolean isAbove = (aboveView != null) && (mLastEventY < aboveView.getBottom() - aboveView.getHeight() / 2);
 
         if (isBelow || isAbove) {
 
