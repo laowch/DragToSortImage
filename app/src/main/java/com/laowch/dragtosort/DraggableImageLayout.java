@@ -28,6 +28,8 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
     private View mAddPictureView;
 
+    private final int SMOOTH_SCROLL_AMOUNT_AT_EDGE = 15;
+
 
     private int mDownX = -1;
     private int mDownY = -1;
@@ -73,6 +75,7 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
 
     public void init(Context context) {
         setOnLongClickListener(this);
+        mSmoothScrollAmountAtEdge = DisplayUtils.dpToPixel(getContext(), SMOOTH_SCROLL_AMOUNT_AT_EDGE);
 
     }
 
@@ -239,7 +242,20 @@ public class DraggableImageLayout extends LinearLayout implements View.OnLongCli
     }
 
     private void handleMobileCellScroll() {
+        mIsMobileScrolling = handleMobileCellScroll(mLastEventY);
+    }
 
+    private boolean handleMobileCellScroll(int lastY) {
+        if (lastY - mHoverCell.getHeight() / 2 < mScrollView.getScrollY()) {
+            mScrollView.smoothScrollBy(0, -mSmoothScrollAmountAtEdge);
+            return true;
+        } else if (lastY + mHoverCell.getHeight() / 2 > mScrollView.getHeight()) {
+            mScrollView.smoothScrollBy(0, mSmoothScrollAmountAtEdge);
+            return true;
+        }
+
+
+        return false;
     }
 
     private void handleCellSwitch() {
